@@ -1,0 +1,39 @@
+{
+  "id": "ovid-me",
+  "name": "OVID-ME",
+  "description": "Mandate evaluation tools — evaluate, shadow-compare, and audit OVID mandates",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "mandateMode": {
+        "type": "string",
+        "enum": ["enforce", "dry-run", "shadow"],
+        "default": "enforce"
+      },
+      "auditLog": {
+        "type": "string",
+        "description": "JSONL audit log path"
+      },
+      "auditDb": {
+        "type": "string",
+        "description": "SQLite DB path for dashboard"
+      },
+      "dashboardPort": {
+        "type": "number",
+        "default": 19831
+      },
+      "subsetProof": {
+        "type": "string",
+        "enum": ["required", "advisory", "off"],
+        "default": "off"
+      },
+      "enforcementFailure": {
+        "type": "string",
+        "enum": ["closed", "open"],
+        "default": "closed"
+      }
+    }
+  }
+}
