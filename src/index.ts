@@ -13,7 +13,7 @@ import {
   type EvaluateRequest,
 } from '@clawdreyhepburn/ovid-me';
 
-export const id = 'ovid-me';
+export const id = 'openclaw-ovid-me';
 export const name = 'OVID-ME';
 
 interface PluginConfig {
