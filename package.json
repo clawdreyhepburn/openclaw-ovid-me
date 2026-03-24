@@ -1,6 +1,6 @@
 {
   "name": "@clawdreyhepburn/openclaw-ovid-me",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "OpenClaw plugin for OVID-ME mandate evaluation",
   "type": "module",
   "main": "src/index.ts",
@@ -16,5 +16,10 @@
   "devDependencies": {
     "@types/node": "^25.5.0",
     "typescript": "^6.0.2"
+  },
+  "openclaw": {
+    "extensions": [
+      "./src/index.ts"
+    ]
   }
 }
