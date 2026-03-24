@@ -54,7 +54,7 @@ export default function register(api: OpenClawPluginApi) {
   const config: PluginConfig = api.pluginConfig ?? {};
   const logger = api.logger;
 
-  const mandateMode = config.mandateMode ?? 'enforce';
+  const mandateMode = config.mandateMode ?? 'dry-run';
   const dashboardPort = config.dashboardPort ?? 19831;
 
   // --- Service ---
@@ -80,6 +80,7 @@ export default function register(api: OpenClawPluginApi) {
       }
 
       logger.info(`OVID-ME mandate evaluation active (mode: ${mandateMode})`);
+      logger.warn('OVID-ME mandate evaluation active but no identity plugin found. Install @clawdreyhepburn/openclaw-ovid for token minting.');
     },
     async stop() {
       if (dashboardRunning) {
