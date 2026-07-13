@@ -2,7 +2,7 @@
   "id": "openclaw-ovid-me",
   "name": "OVID-ME",
   "description": "Mandate evaluation tools \u2014 evaluate, shadow-compare, and audit OVID mandates",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "activation": {
     "onStartup": true
   },

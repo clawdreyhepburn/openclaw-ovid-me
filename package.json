@@ -1,9 +1,12 @@
 {
   "name": "@clawdreyhepburn/openclaw-ovid-me",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "OpenClaw plugin for OVID-ME mandate evaluation",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "@clawdreyhepburn/ovid": "^0.4.2",
     "@clawdreyhepburn/ovid-me": "^0.4.2"
@@ -14,8 +17,8 @@
     "url": "https://github.com/clawdreyhepburn/openclaw-ovid-me.git"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
-    "typescript": "^6.0.2"
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
   },
   "openclaw": {
     "extensions": [
@@ -23,6 +26,7 @@
     ]
   },
   "files": [
+    "dist",
     "src/index.ts",
     "openclaw.plugin.json",
     "README.md",
