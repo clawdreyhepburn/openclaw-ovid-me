@@ -1,11 +1,22 @@
 {
   "id": "openclaw-ovid-me",
   "name": "OVID-ME",
-  "description": "Mandate evaluation tools — evaluate, shadow-compare, and audit OVID mandates",
-  "version": "0.1.3",
-  "activation": { "onStartup": true },
-  "contracts": { "tools": ["ovid_evaluate", "ovid_shadow", "ovid_audit"] },
-  "hooks": ["before_tool_call", "after_tool_call"],
+  "description": "Mandate evaluation tools \u2014 evaluate, shadow-compare, and audit OVID mandates",
+  "version": "0.1.6",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "ovid_evaluate",
+      "ovid_shadow",
+      "ovid_audit"
+    ]
+  },
+  "hooks": [
+    "before_tool_call",
+    "after_tool_call"
+  ],
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
