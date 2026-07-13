@@ -156,13 +156,36 @@ export default function register(api: OpenClawPluginApi) {
 
       engine = new MandateEngine(ovidConfig);
 
-      auditDb = new AuditDatabase(auditDbPath);
+      // SQLite audit store + dashboard are best-effort. better-sqlite3 is a
+      // native module; if its binding is missing (e.g. installed with
+      // --ignore-scripts, which OpenClaw's plugin installer uses), constructing
+      // AuditDatabase throws. We must NOT let that take down the whole plugin
+      // service — mandate evaluation + JSONL auditing still work without SQLite.
+      let sqliteAvailable = false;
       try {
-        await startDashboard({ dbPath: auditDbPath, port: dashboardPort });
-        dashboardRunning = true;
-        logger.info(`OVID-ME forensics dashboard at http://localhost:${dashboardPort}`);
+        auditDb = new AuditDatabase(auditDbPath);
+        sqliteAvailable = true;
       } catch (err: any) {
-        logger.warn(`OVID-ME dashboard failed to start: ${err.message}`);
+        auditDb = null;
+        if (err?.code === 'OVID_SQLITE_UNAVAILABLE') {
+          logger.warn(
+            `OVID-ME: SQLite audit store unavailable (native better-sqlite3 binding missing). ` +
+            `Continuing with JSONL-only auditing; forensics dashboard will be disabled. ` +
+            `To enable it, rebuild better-sqlite3 (e.g. run \`npx prebuild-install\` or \`npm rebuild better-sqlite3\` in the plugin's node_modules).`,
+          );
+        } else {
+          logger.warn(`OVID-ME: audit database failed to initialize: ${err?.message ?? String(err)}. Continuing with JSONL-only auditing.`);
+        }
+      }
+
+      if (sqliteAvailable) {
+        try {
+          await startDashboard({ dbPath: auditDbPath, port: dashboardPort });
+          dashboardRunning = true;
+          logger.info(`OVID-ME forensics dashboard at http://localhost:${dashboardPort}`);
+        } catch (err: any) {
+          logger.warn(`OVID-ME dashboard failed to start: ${err.message}`);
+        }
       }
 
       if (authzenEnabled) {
@@ -415,13 +438,22 @@ export default function register(api: OpenClawPluginApi) {
         ? (mandate.proven ? 'allow-proven' : 'allow-unproven')
         : decision;
 
-      auditDb.recordDecision(
-        mandate.agentJti,
-        action,
-        `${resourceType}:${toolName}`,
-        qualifiedDecision,
-        matchedPolicy ? [matchedPolicy] : [],
-      );
+      // SQLite is optional; enforcement above does not depend on it. Only record
+      // to the structured store when it initialized successfully (JSONL auditing,
+      // if configured, happens independently in the mandate engine).
+      if (auditDb) {
+        try {
+          auditDb.recordDecision(
+            mandate.agentJti,
+            action,
+            `${resourceType}:${toolName}`,
+            qualifiedDecision,
+            matchedPolicy ? [matchedPolicy] : [],
+          );
+        } catch (err: any) {
+          logger.warn(`[OVID-ME] Failed to record decision to SQLite: ${err?.message ?? String(err)}`);
+        }
+      }
 
       if (decision === 'deny') {
         logger.info(`[OVID-ME] ${mandateMode === 'enforce' ? 'DENIED' : 'WOULD DENY'}: ${toolName} for ${mandate.agentJti}`);
