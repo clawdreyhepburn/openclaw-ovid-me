@@ -79,16 +79,23 @@ The badge itself is created and signed by the companion plugin, [openclaw-ovid](
 ## Install
 
 ```bash
-openclaw plugins install @clawdreyhepburn/openclaw-ovid-me
+# Recommended full stack
+openclaw plugins install @clawdreyhepburn/openclaw-ovid      # issues badges
+openclaw plugins install @clawdreyhepburn/openclaw-ovid-me   # checks badges (this plugin)
+openclaw plugins install @clawdreyhepburn/carapace           # deployment ceiling
+openclaw carapace setup
 ```
 
-You'll almost always want the badge-issuing companion too (this plugin checks badges; that one creates them):
+Or just the OVID pair:
 
 ```bash
+openclaw plugins install @clawdreyhepburn/openclaw-ovid-me
 openclaw plugins install @clawdreyhepburn/openclaw-ovid
 ```
 
-OpenClaw picks both up automatically. **By default this plugin starts in `dry-run` mode**, which watches and logs but never blocks — so installing it can't break your workflow. You opt into real blocking when you're ready (see next section).
+OpenClaw picks plugins up automatically. **By default this plugin starts in `dry-run` mode**, which watches and logs but never blocks — so installing it can't break your workflow. You opt into real blocking when you're ready (see next section).
+
+If the forensics dashboard fails after a Node upgrade with a `better-sqlite3` / `NODE_MODULE_VERSION` error, rebuild the native binding in the ovid-me install (`npm rebuild better-sqlite3`). Evaluation still works without SQLite; only the dashboard/structured audit store needs it.
 
 ---
 

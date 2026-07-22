@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@clawdreyhepburn/ovid": "^0.4.2",
-    "@clawdreyhepburn/ovid-me": "^0.4.3"
+    "@clawdreyhepburn/ovid-me": "^0.4.4"
   },
   "license": "Apache-2.0",
   "repository": {
