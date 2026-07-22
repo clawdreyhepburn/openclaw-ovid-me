@@ -263,37 +263,57 @@ export default function register(api) {
             if (!mandate)
                 return {}; // No mandate found yet
             // ── Map tool call to Cedar action + typed resource ──
-            // The action is a verb from the Ovid schema.
-            // The resource carries typed context (path, command, url, etc.)
+            // The action is a verb from the Ovid schema. The RESOURCE ID is the
+            // real thing the mandate scopes on: the shell binary, the request host,
+            // the file path, the channel provider, or the tool name. Passing the
+            // tool name as the resource (the pre-2026-07-22 behavior) made
+            // binary/host/path-scoped mandates impossible to match — every exec
+            // looked like `exec` regardless of `git` vs `rm`.
+            //
+            // resourceId  → request.resource      (matched against resource == Type::"id")
+            // resourceType→ request.resourceType  (namespace-insensitive kind match)
+            // resourcePath→ context.path          (matched against resource.path like "glob")
             let action = 'call_tool';
             let resourceType = 'Tool';
+            let resourceId = toolName;
+            let resourcePath = '';
             let resourceAttrs = { name: toolName };
             switch (toolName) {
                 case 'read':
                     action = 'read';
                     resourceType = 'File';
-                    resourceAttrs = { path: String(params.path ?? '') };
+                    resourceId = String(params.path ?? toolName);
+                    resourcePath = String(params.path ?? '');
+                    resourceAttrs = { path: resourcePath };
                     break;
                 case 'write':
                     action = 'write';
                     resourceType = 'File';
-                    resourceAttrs = { path: String(params.path ?? '') };
+                    resourceId = String(params.path ?? toolName);
+                    resourcePath = String(params.path ?? '');
+                    resourceAttrs = { path: resourcePath };
                     break;
                 case 'edit':
                     action = 'edit';
                     resourceType = 'File';
-                    resourceAttrs = { path: String(params.path ?? '') };
+                    resourceId = String(params.path ?? toolName);
+                    resourcePath = String(params.path ?? '');
+                    resourceAttrs = { path: resourcePath };
                     break;
                 case 'exec': {
                     action = 'exec';
                     resourceType = 'Shell';
                     const cmd = String(params.command ?? '');
-                    resourceAttrs = { command: cmd.split(/\s+/)[0] || cmd, args: cmd };
+                    // Resource id is the binary name (last path segment of arg0).
+                    const bin = (cmd.trim().split(/\s+/)[0] || cmd).replace(/^.*\//, '');
+                    resourceId = bin || toolName;
+                    resourceAttrs = { command: bin, args: cmd };
                     break;
                 }
                 case 'process':
                     action = 'exec';
                     resourceType = 'Shell';
+                    resourceId = 'process';
                     resourceAttrs = { command: 'process', args: String(params.action ?? '') };
                     break;
                 case 'web_fetch': {
@@ -301,9 +321,12 @@ export default function register(api) {
                     resourceType = 'WebEndpoint';
                     const fetchUrl = String(params.url ?? '');
                     try {
-                        resourceAttrs = { url: fetchUrl, hostname: new URL(fetchUrl).hostname };
+                        const host = new URL(fetchUrl).hostname;
+                        resourceId = host;
+                        resourceAttrs = { url: fetchUrl, hostname: host };
                     }
                     catch {
+                        resourceId = fetchUrl || toolName;
                         resourceAttrs = { url: fetchUrl };
                     }
                     break;
@@ -311,52 +334,71 @@ export default function register(api) {
                 case 'web_search':
                     action = 'search';
                     resourceType = 'WebEndpoint';
+                    resourceId = toolName; // no host; scope by verb
                     resourceAttrs = { url: String(params.query ?? '') };
                     break;
-                case 'browser':
+                case 'browser': {
                     action = 'browse';
                     resourceType = 'WebEndpoint';
-                    resourceAttrs = { url: String(params.url ?? '') };
+                    const burl = String(params.url ?? '');
+                    try {
+                        resourceId = burl ? new URL(burl).hostname : toolName;
+                    }
+                    catch {
+                        resourceId = burl || toolName;
+                    }
+                    resourceAttrs = { url: burl };
                     break;
+                }
                 case 'message':
                     action = 'send';
                     resourceType = 'Channel';
+                    resourceId = String(params.channel ?? 'unknown');
                     resourceAttrs = { provider: String(params.channel ?? 'unknown'), target: String(params.target ?? '') };
                     break;
                 case 'sessions_spawn':
                     action = 'delegate';
                     resourceType = 'Session';
+                    resourceId = String(params.label ?? toolName);
                     resourceAttrs = { key: String(params.label ?? '') };
                     break;
                 case 'memory_search':
                 case 'memory_get':
                     action = 'recall';
                     resourceType = 'Memory';
-                    resourceAttrs = { path: String(params.path ?? params.query ?? '') };
+                    resourceId = String(params.path ?? toolName);
+                    resourcePath = String(params.path ?? params.query ?? '');
+                    resourceAttrs = { path: resourcePath };
                     break;
                 case 'tts':
                     action = 'call_tool';
                     resourceType = 'Tool';
+                    resourceId = 'tts';
                     resourceAttrs = { name: 'tts' };
                     break;
                 case 'image':
                 case 'pdf':
                     action = 'read';
                     resourceType = 'File';
-                    resourceAttrs = { path: String(params.image ?? params.pdf ?? '') };
+                    resourceId = String(params.image ?? params.pdf ?? toolName);
+                    resourcePath = String(params.image ?? params.pdf ?? '');
+                    resourceAttrs = { path: resourcePath };
                     break;
                 default:
+                    resourceId = toolName;
                     break;
             }
-            const resourceId = `Ovid::${resourceType}::"${toolName}"`;
-            // Evaluate against Cedar mandate
+            // Evaluate against Cedar mandate.
             let decision = 'allow';
             let matchedPolicy = null;
             try {
                 const result = evaluateMandate(mandate.policySet, {
                     action,
-                    resource: toolName,
-                    ...(Object.keys(resourceAttrs).length > 0 ? { context: { resourceType, ...resourceAttrs } } : {}),
+                    resource: resourceId,
+                    resourceType,
+                    ...(resourcePath || Object.keys(resourceAttrs).length > 0
+                        ? { context: { resourceType, ...(resourcePath ? { path: resourcePath } : {}), ...resourceAttrs } }
+                        : {}),
                 });
                 decision = result.decision === 'allow' ? 'allow' : 'deny';
                 matchedPolicy = result.matchedPolicy ?? null;
