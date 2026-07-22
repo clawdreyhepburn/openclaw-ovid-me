@@ -1,6 +1,6 @@
 {
   "name": "@clawdreyhepburn/openclaw-ovid-me",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "OpenClaw plugin for OVID-ME mandate evaluation",
   "type": "module",
   "main": "dist/index.js",
@@ -8,8 +8,8 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@clawdreyhepburn/ovid": "^0.4.2",
-    "@clawdreyhepburn/ovid-me": "^0.4.4"
+    "@clawdreyhepburn/ovid": "^0.5.0",
+    "@clawdreyhepburn/ovid-me": "^0.4.6"
   },
   "license": "Apache-2.0",
   "repository": {
